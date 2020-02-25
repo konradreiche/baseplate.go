@@ -2,8 +2,10 @@ package events
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/reddit/baseplate.go/log"
 	"github.com/reddit/baseplate.go/mqsend"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -112,4 +114,22 @@ func (q *Queue) Put(ctx context.Context, event thrift.TStruct) error {
 	}
 
 	return q.queue.Send(ctx, data)
+}
+
+type EventLogger interface {
+	Log(keysAndValues ...interface{})
+}
+
+type DebugLogger struct {
+	logger log.Wrapper
+}
+
+func NewDebugLogger(logger log.Wrapper) *DebugLogger {
+	return &DebugLogger{
+		logger: logger,
+	}
+}
+
+func (l *DebugLogger) Log(keysAndValues ...interface{}) {
+	l.logger(fmt.Sprintf("would send event: %v", keysAndValues))
 }

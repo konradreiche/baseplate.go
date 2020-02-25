@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/reddit/baseplate.go/events"
 	"github.com/reddit/baseplate.go/filewatcher"
 	"github.com/reddit/baseplate.go/log"
 	"github.com/reddit/baseplate.go/timebp"
@@ -24,7 +25,8 @@ const targetAllOverride = `{"OVERRIDE": true}`
 // the experiment configuration fetcher daemon.  It will automatically reload
 // the cache when changed.
 type Experiments struct {
-	watcher *filewatcher.Result
+	watcher     *filewatcher.Result
+	eventLogger events.EventLogger
 }
 
 // NewExperiments returns a new instance of the experiments clients. The path
@@ -32,7 +34,7 @@ type Experiments struct {
 //
 // Context should come with a timeout otherwise this might block forever, i.e.
 // if the path never becomes available.
-func NewExperiments(ctx context.Context, path string, logger log.Wrapper) (*Experiments, error) {
+func NewExperiments(ctx context.Context, path string, eventLogger events.EventLogger, logger log.Wrapper) (*Experiments, error) {
 	parser := func(r io.Reader) (interface{}, error) {
 		var doc document
 		err := json.NewDecoder(r).Decode(&doc)
@@ -45,8 +47,12 @@ func NewExperiments(ctx context.Context, path string, logger log.Wrapper) (*Expe
 	if err != nil {
 		return nil, err
 	}
+	if eventLogger == nil {
+		eventLogger = events.NewDebugLogger(logger)
+	}
 	return &Experiments{
 		watcher: result,
+		event:   events.Logger,
 	}, nil
 }
 
